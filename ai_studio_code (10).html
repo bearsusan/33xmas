@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dreamy Christmas - Final Edition</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@400;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #020205;
+            color: white;
+            font-family: "Helvetica Neue", Helvetica, Arial, "Microsoft Yahei", sans-serif;
+            touch-action: none; 
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        canvas {
+            display: block;
+        }
+        
+        /* Logo */
+        #brand-logo {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 140px; 
+            height: auto;
+            z-index: 20;
+            opacity: 0.9;
+            pointer-events: none; 
+        }
+
+        /* 顶部提示语 */
+        #instructions {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            pointer-events: none;
+            z-index: 10;
+            line-height: 1.6;
+        }
+        .inst-title {
+            font-size: 15px;
+            color: #E0B0FF; 
+            text-shadow: 0 0 10px rgba(224, 176, 255, 0.6);
+            font-weight: 300; 
+            letter-spacing: 1px;
+        }
+        .inst-sub {
+            font-size: 12px;
+            color: rgba(224, 176, 255, 0.7);
+            font-weight: 300;
+        }
+
+        /* 右上角按钮 */
+        #danmaku-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #E0B0FF, #9932CC);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 15px;
+            cursor: pointer;
+            z-index: 200; 
+            box-shadow: 0 0 15px rgba(147, 112, 219, 0.6);
+            font-weight: bold;
+            border: 1px solid rgba(255,255,255,0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+            white-space: nowrap;
+        }
+        #danmaku-btn:active {
+            transform: scale(0.95);
+        }
+        #danmaku-btn:hover {
+            box-shadow: 0 0 25px rgba(147, 112, 219, 0.9);
+        }
+
+        /* 播放器 */
+        #music-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            z-index: 100;
+            cursor: pointer;
+        }
+
+        .vinyl-disc {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            background: 
+                repeating-radial-gradient(#111 0, #111 2px, #222 3px, #111 4px),
+                conic-gradient(from 0deg, rgba(255,255,255,0.1) 0deg, transparent 60deg, rgba(255,255,255,0.1) 180deg, transparent 240deg);
+            background-blend-mode: overlay;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .vinyl-label {
+            width: 40%;
+            height: 40%;
+            background: #D32F2F; 
+            border-radius: 50%;
+            position: relative;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
+        }
+        .vinyl-label::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px; height: 6px;
+            background: #000;
+            border-radius: 50%;
+        }
+
+        .playing .vinyl-disc {
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .music-notes-container {
+            position: fixed; 
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 200px;
+            pointer-events: none;
+            overflow: visible;
+            z-index: 101; 
+        }
+        
+        .emoji-note {
+            position: absolute;
+            bottom: 30px; 
+            left: 50%;
+            font-size: 28px; 
+            transform: translateX(-50%);
+            animation: floatPop 2.5s ease-out forwards;
+            font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+            text-shadow: 0 0 5px rgba(255,255,255,0.5);
+            opacity: 0;
+        }
+
+        @keyframes floatPop {
+            0% { opacity: 0; transform: translate(-50%, 0) scale(0.5); }
+            15% { opacity: 1; transform: translate(-50%, -40px) scale(1.2); }
+            100% { opacity: 0; transform: translate(calc(-50% + 20px), -120px) scale(0.8); }
+        }
+
+    </style>
+</head>
+<body>
+    <img id="brand-logo" src="https://oss.nb-jf.com/Home/image/logo.png" alt="Logo">
+
+    <div id="instructions">
+        <div class="inst-title">点击触发：绿色圣诞树 · 紫色圣诞树 · 礼物</div>
+        <div class="inst-sub">（还有随机祝福哦～）</div>
+    </div>
+
+    <div id="danmaku-btn">🎅获得满满圣诞祝福</div>
+    
+    <div id="music-container">
+        <div class="vinyl-disc" id="vinyl">
+            <div class="vinyl-label"></div>
+        </div>
+    </div>
+    <div class="music-notes-container" id="emoji-container"></div>
+
+    <audio id="bgm" loop>
+        <source src="https://music.163.com/song/media/outer/url?id=2098994083.mp3" type="audio/mpeg">
+    </audio>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let particles = [];
+        let ribbons = []; 
+        let snowflakes = []; 
+        let sparks = [];     
+        let floatTexts = []; 
+        let danmakus = []; 
+
+        let mode = 0; 
+        let transitionAlpha = 1.0; 
+        
+        let mouseX = 0, mouseY = 0;
+        let targetRotationY = 0, targetRotationX = 0;
+        let currentRotationY = 0, currentRotationX = 0;
+        let isDragging = false;
+        let lastMouseX = 0, lastMouseY = 0;
+        let dragStartTime;
+        let isClick = false;
+
+        const TREE_HEIGHT = 500;
+        const TREE_WIDTH = 280;
+        const TOP_Y = -250; 
+        const BOTTOM_Y = 250; 
+        const FOV = 400;
+        const PARTICLE_COUNT = 3000; 
+
+        const BLESSINGS = [
+            "Merry Christmas！！",
+            "各位继峰宝宝们圣诞快乐🎄",
+            "把心情调成圣诞模式！！",
+            "圣诞为你“加载”灵感和好运！",
+            "Merry Christmas! 🎅✨",
+            "工作顺利，升职加薪！",
+            "祝圣诞快乐！项目顺顺，收获满满。",
+            "好运连连，天天开心！",
+            "方案一稿过，OKR达标",
+            "吃好喝好睡眠好",
+            "美满幸福好运到",
+            "锦绣前程，步步高升",
+            "好运降临，圣诞快乐！",
+            "前途璀璨，一路生花！",
+            "未来可期，勇攀高峰！"
+        ];
+        let blessingIndex = 0;
+
+        // --- 按钮逻辑 ---
+        const danmakuBtn = document.getElementById('danmaku-btn');
+        danmakuBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            triggerDanmaku();
+        });
+
+        // 触发弹幕 (2组文案，快速飘完)
+        function triggerDanmaku() {
+            // 定义泳道参数 (字号变小，泳道高度设为50)
+            const laneHeight = 50; 
+            const minY = 140; 
+            const maxY = height - 180; 
+            
+            const totalLanes = Math.floor((maxY - minY) / laneHeight);
+            if (totalLanes <= 0) return;
+
+            // 记录每个泳道最右侧位置
+            let laneCursors = new Array(totalLanes).fill(width);
+
+            // 更新现有弹幕占位
+            danmakus.forEach(d => {
+                const laneIndex = Math.floor((d.y - minY) / laneHeight);
+                if (laneIndex >= 0 && laneIndex < totalLanes) {
+                    const endX = d.x + d.width;
+                    if (endX > laneCursors[laneIndex]) {
+                        laneCursors[laneIndex] = endX;
+                    }
+                }
+            });
+
+            // 构造 2 组文案
+            const doubleBlessings = [...BLESSINGS, ...BLESSINGS];
+            // 随机打乱
+            const shuffled = doubleBlessings.sort(() => 0.5 - Math.random());
+            
+            // 遍历生成所有
+            for (let i = 0; i < shuffled.length; i++) {
+                const text = shuffled[i];
+                
+                // 随机选择泳道
+                const laneIndex = Math.floor(Math.random() * totalLanes);
+                const y = minY + laneIndex * laneHeight + 30; // 居中
+
+                // 计算起始 X：紧接该泳道最后一个弹幕，加随机间距(40~120)
+                let startX = laneCursors[laneIndex] + Math.random() * 80 + 40;
+                
+                const newDanmaku = new Danmaku(text, y, startX);
+                danmakus.push(newDanmaku);
+
+                // 更新游标
+                laneCursors[laneIndex] = startX + newDanmaku.width; 
+            }
+        }
+
+        // --- 音乐控制 ---
+        const musicContainer = document.getElementById('music-container');
+        const emojiContainer = document.getElementById('emoji-container');
+        const bgm = document.getElementById('bgm');
+        let isPlaying = false; 
+        let emojiInterval;
+
+        const CHRISTMAS_EMOJIS = ['🎄','🎅','🦌','🎉','💙','🌟','✨','❄️','🔔','⛄','❤️','🎊','🎈','🎁','🍻','💜','🤍'];
+
+        function spawnEmoji() {
+            if (!isPlaying) return;
+            const emoji = document.createElement('div');
+            emoji.classList.add('emoji-note');
+            emoji.innerText = CHRISTMAS_EMOJIS[Math.floor(Math.random() * CHRISTMAS_EMOJIS.length)];
+            emoji.style.left = (50 + (Math.random() - 0.5) * 40) + '%';
+            emojiContainer.appendChild(emoji);
+            setTimeout(() => { emoji.remove(); }, 2500);
+        }
+
+        function startEmojiRain() {
+            if (emojiInterval) clearInterval(emojiInterval);
+            emojiInterval = setInterval(spawnEmoji, 400); 
+        }
+
+        function stopEmojiRain() {
+            if (emojiInterval) clearInterval(emojiInterval);
+        }
+
+        function playMusic() {
+            if(bgm.currentTime < 1) {
+                bgm.currentTime = 2;
+            }
+            const playPromise = bgm.play();
+            if (playPromise !== undefined) {
+                playPromise.then(_ => {
+                    isPlaying = true;
+                    musicContainer.classList.add('playing');
+                    startEmojiRain();
+                }).catch(error => {
+                    console.log("自动播放被拦截");
+                    isPlaying = false;
+                });
+            }
+        }
+
+        window.addEventListener('load', () => {
+            bgm.volume = 0.6; 
+            playMusic();
+        });
+
+        window.addEventListener('click', () => {
+            if (bgm.paused && !isPlaying) {
+                playMusic();
+            }
+        }, { once: true });
+
+        musicContainer.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            if (isPlaying) {
+                bgm.pause();
+                musicContainer.classList.remove('playing');
+                stopEmojiRain();
+            } else {
+                bgm.play();
+                musicContainer.classList.add('playing');
+                startEmojiRain();
+            }
+            isPlaying = !isPlaying;
+        });
+
+        // --- Class 定义 ---
+
+        // 弹幕类
+        class Danmaku {
+            constructor(text, y, startX) {
+                this.text = text;
+                this.x = startX; 
+                this.y = y;
+                // 速度稍微调快一点: 3 ~ 5
+                this.speed = Math.random() * 2.0 + 3.0; 
+                this.dead = false;
+                
+                // 字号改为 24px
+                ctx.font = "bold 24px 'Noto Sans SC', sans-serif";
+                this.width = ctx.measureText(text).width + 40; 
+                this.height = 40; 
+            }
+            update() {
+                this.x -= this.speed;
+                if (this.x < -this.width - 100) this.dead = true; 
+            }
+            draw() {
+                ctx.save();
+                
+                // 1. 绘制白紫色圆角背景
+                let gradient = ctx.createLinearGradient(this.x, 0, this.x + this.width, 0);
+                gradient.addColorStop(0, "rgba(160, 100, 255, 0.6)"); 
+                gradient.addColorStop(1, "rgba(255, 255, 255, 0.4)"); 
+
+                ctx.fillStyle = gradient;
+                
+                const radius = 20; // 圆角
+                const rX = this.x;
+                const rY = this.y - 28; // 垂直校准
+                
+                ctx.beginPath();
+                ctx.roundRect(rX, rY, this.width, this.height, radius);
+                ctx.fill();
+
+                // 2. 绘制文字 (24px)
+                ctx.font = "bold 24px 'Noto Sans SC', sans-serif";
+                ctx.textAlign = "left";
+                ctx.fillStyle = "#FFFFFF"; 
+                
+                ctx.shadowColor = "rgba(0,0,0,0.6)";
+                ctx.shadowBlur = 3;
+                ctx.shadowOffsetX = 1;
+                ctx.shadowOffsetY = 1;
+                
+                ctx.fillText(this.text, this.x + 20, this.y); 
+                
+                ctx.restore();
+            }
+        }
+
+        class Snowflake {
+            constructor() {
+                this.reset(true);
+            }
+            reset(initial = false) {
+                this.x = Math.random() * width;
+                this.y = initial ? Math.random() * height : -10;
+                this.z = Math.random() * 0.8 + 0.5; 
+                this.size = (Math.random() * 4 + 3) * this.z;
+                this.speedY = (Math.random() * 1.5 + 0.8) * this.z;
+                this.opacity = Math.random() * 0.5 + 0.2;
+            }
+            update() {
+                this.y += this.speedY;
+                this.x += Math.sin(this.y * 0.01) * 0.5;
+
+                const relX = this.x - width / 2;
+                const relY = this.y - height / 2;
+                let hit = false;
+
+                if (mode !== 2) { 
+                    if (relY > -250 && relY < 250) {
+                        let normalizedH = (relY + 250) / 500; 
+                        let currentRadius = 140 * normalizedH + 20; 
+                        if (Math.abs(relX) < currentRadius) hit = true;
+                    }
+                } else {
+                    if (relY > -120 && relY < 120) {
+                        if (Math.abs(relX) < 120) hit = true;
+                    }
+                }
+                
+                if (hit) this.opacity -= 0.05; 
+
+                if (this.opacity <= 0 || this.y > height) {
+                    this.reset();
+                }
+            }
+            draw() {
+                if (this.opacity <= 0) return;
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = "white";
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class Spark {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 4 + 1; 
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed - 2; 
+                this.life = 1.0;
+                this.decay = Math.random() * 0.015 + 0.01;
+                
+                const hue = 40 + Math.random() * 15;
+                const light = 50 + Math.random() * 40;
+                this.color = `hsl(${hue}, 100%, ${light}%)`;
+                this.baseSize = Math.random() * 3 + 1;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.15; 
+                this.vx *= 0.95; 
+                this.life -= this.decay;
+            }
+            draw() {
+                if (this.life <= 0) return;
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.baseSize, 0, Math.PI*2);
+                ctx.fill();
+                if (Math.random() > 0.7) {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = "#FFF";
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        class FloatText {
+            constructor(x, y, text) {
+                this.x = x;
+                this.y = y;
+                this.text = text;
+                this.life = 1.0;
+                this.dy = -2.5; 
+            }
+            update() {
+                this.y += this.dy;
+                this.life -= 0.01;
+            }
+            draw() {
+                if (this.life <= 0) return;
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.font = "32px sans-serif";
+                ctx.textAlign = "center";
+                
+                ctx.shadowColor = "#FFD700"; 
+                ctx.shadowBlur = 30;
+                
+                ctx.fillStyle = "#FFFF33"; 
+                ctx.fillText(this.text, this.x, this.y);
+                
+                ctx.shadowBlur = 10;
+                ctx.fillStyle = "#FFFFFF";
+                ctx.fillText(this.text, this.x, this.y);
+
+                ctx.restore();
+            }
+        }
+
+        class Particle {
+            constructor(index) {
+                this.index = index;
+                let rand = Math.random();
+                if (rand > 0.98) { this.type = 'bow'; this.baseSize = 4.5; }
+                else if (rand > 0.94) { this.type = 'bell'; this.baseSize = 5; }
+                else if (rand > 0.8) { this.type = 'gold'; this.baseSize = 2.2; }
+                else { this.type = 'leaf'; this.baseSize = 1.8; }
+
+                this.treeY = Math.random() * TREE_HEIGHT - (TREE_HEIGHT/2); 
+                let normalizedH = (this.treeY - TOP_Y) / TREE_HEIGHT; 
+                this.treeRadius = Math.random() * TREE_WIDTH * normalizedH; 
+                this.treeAngle = Math.random() * Math.PI * 2;
+                this.treeX = Math.cos(this.treeAngle) * this.treeRadius;
+                this.treeZ = Math.sin(this.treeAngle) * this.treeRadius;
+
+                this.isGalaxyBase = false;
+                if (this.type === 'leaf' && Math.random() < 0.35) {
+                    this.isGalaxyBase = true;
+                    let spiralAngle = Math.random() * Math.PI * 8; 
+                    let spiralDist = Math.pow(Math.random(), 0.5) * 350 + 50; 
+                    this.galaxyX = Math.cos(spiralAngle) * spiralDist;
+                    this.galaxyZ = Math.sin(spiralAngle) * spiralDist;
+                    this.galaxyY = BOTTOM_Y + (Math.random() - 0.5) * 20; 
+                } else {
+                    this.galaxyX = this.treeX;
+                    this.galaxyY = this.treeY;
+                    this.galaxyZ = this.treeZ;
+                }
+                
+                let hue = 200 + Math.random() * 80; 
+                this.galaxyColor = `hsl(${hue}, 80%, 75%)`;
+                if (Math.random() > 0.9) this.galaxyColor = "#ffffff"; 
+
+                const boxSize = 240;
+                const halfBox = boxSize / 2;
+                this.isGiftBow = false; 
+                this.isGiftRibbon = false; 
+
+                if (this.type === 'bow' || Math.random() > 0.85) {
+                    this.isGiftBow = true;
+                    const bowCenterY = -halfBox - 20;
+                    const bowSize = 100; 
+                    let t = Math.random() * Math.PI * 2;
+                    this.giftX = bowSize * Math.cos(t);
+                    this.giftZ = bowSize * Math.sin(2*t) / 2;
+                    this.giftY = bowCenterY + (Math.random() - 0.5) * 30;
+                    if (Math.random() > 0.6) {
+                         this.giftX = (Math.random() - 0.5) * 40;
+                         this.giftY = bowCenterY - 15 + (Math.random() - 0.5) * 40;
+                         this.giftZ = (Math.random() - 0.5) * 40;
+                    }
+                } else {
+                    const face = Math.floor(Math.random() * 6);
+                    let u = (Math.random() - 0.5) * boxSize;
+                    let v = (Math.random() - 0.5) * boxSize;
+                    if (face === 0) { this.giftX = u; this.giftY = v; this.giftZ = halfBox; }
+                    else if (face === 1) { this.giftX = u; this.giftY = v; this.giftZ = -halfBox; }
+                    else if (face === 2) { this.giftX = halfBox; this.giftY = u; this.giftZ = v; }
+                    else if (face === 3) { this.giftX = -halfBox; this.giftY = u; this.giftZ = v; }
+                    else if (face === 4) { this.giftX = u; this.giftY = halfBox; this.giftZ = v; }
+                    else { this.giftX = u; this.giftY = -halfBox; this.giftZ = v; }
+
+                    const ribbonWidth = 40;
+                    if (Math.abs(this.giftX) < ribbonWidth || Math.abs(this.giftY) < ribbonWidth || Math.abs(this.giftZ) < ribbonWidth) {
+                        this.isGiftRibbon = true;
+                    }
+                }
+
+                this.x = this.treeX; this.y = this.treeY; this.z = this.treeZ;
+                this.speed = Math.random() * 0.02 + 0.005;
+                this.angle = this.treeAngle; 
+
+                if (this.type === 'bow') this.classicColor = "#ff0000"; 
+                else if (this.type === 'bell') this.classicColor = "#FFD700";
+                else if (this.type === 'gold') this.classicColor = `hsl(${45 + Math.random()*10}, 100%, 70%)`;
+                else { const g = Math.floor(Math.random() * 120 + 60); this.classicColor = `rgb(0, ${g}, 0)`; }
+            }
+
+            update(time) {
+                let targetX, targetY, targetZ;
+
+                if (mode === 0) { 
+                    this.angle += this.speed;
+                    targetX = Math.cos(this.angle) * this.treeRadius;
+                    targetZ = Math.sin(this.angle) * this.treeRadius;
+                    targetY = this.treeY;
+                    this.currentColor = this.classicColor; 
+                } 
+                else if (mode === 1) { 
+                    let flowSpeed = this.speed * 0.5;
+                    let currentAngle = Math.atan2(this.galaxyZ, this.galaxyX);
+                    let r = Math.sqrt(this.galaxyX*this.galaxyX + this.galaxyZ*this.galaxyZ);
+                    if (r < 1) r = 1; 
+
+                    let rot = currentAngle + flowSpeed;
+                    targetX = Math.cos(rot) * r;
+                    targetZ = Math.sin(rot) * r;
+                    targetY = this.galaxyY;
+                    this.galaxyX = targetX; this.galaxyZ = targetZ; 
+
+                    if (!this.isGalaxyBase && (this.type === 'bow' || this.type === 'bell')) {
+                        this.currentColor = this.type === 'bow' ? "#E0FFFF" : "#FFFACD";
+                    } else {
+                        this.currentColor = this.galaxyColor;
+                    }
+                }
+                else if (mode === 2) { 
+                    targetX = this.giftX; targetY = this.giftY; targetZ = this.giftZ;
+                    if (this.isGiftBow) this.currentColor = "#ff0000"; 
+                    else if (this.isGiftRibbon) this.currentColor = "#FFD700"; 
+                    else this.currentColor = `rgb(${180 + Math.random()*50}, 0, 0)`; 
+                } 
+
+                const lerp = mode === 0 ? 0.2 : 0.08;
+                this.x += (targetX - this.x) * lerp;
+                this.y += (targetY - this.y) * lerp;
+                this.z += (targetZ - this.z) * lerp;
+            }
+
+            draw(rotX, rotY, time) {
+                let p = rotate3D(this.x, this.y, this.z, rotX, rotY);
+                const scale = FOV / (FOV + p.z);
+                if (scale > 0) {
+                    const screenX = width / 2 + p.x * scale;
+                    const screenY = height / 2 + p.y * scale;
+                    let size = this.baseSize * scale;
+                    ctx.fillStyle = this.currentColor;
+                    
+                    if (mode !== 2 && this.type === 'bow') {
+                         ctx.beginPath(); ctx.ellipse(screenX - size*0.7, screenY, size, size/1.6, Math.PI/5, 0, Math.PI*2); ctx.ellipse(screenX + size*0.7, screenY, size, size/1.6, -Math.PI/5, 0, Math.PI*2); ctx.fill();
+                    } else if (mode !== 2 && this.type === 'bell') {
+                         ctx.beginPath(); ctx.arc(screenX, screenY, size, 0, Math.PI * 2); ctx.fill();
+                         ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(screenX - size*0.3, screenY - size*0.3, size*0.2, 0, Math.PI*2); ctx.fill();
+                    } else {
+                        if (mode === 1 && this.type === 'leaf') size *= 0.7;
+                        ctx.beginPath(); ctx.arc(screenX, screenY, size, 0, Math.PI * 2); ctx.fill();
+                        if (mode === 1 && this.currentColor === "#ffffff") {
+                            ctx.shadowBlur = 6; ctx.shadowColor = "white"; ctx.fill(); ctx.shadowBlur = 0;
+                        }
+                    }
+                }
+            }
+        }
+
+        class Ribbon {
+            constructor(offset) {
+                this.reset();
+                this.y = BOTTOM_Y + offset;
+                this.trail = []; this.maxTrail = 40; 
+            }
+            reset() {
+                this.y = BOTTOM_Y;
+                this.angle = Math.random() * Math.PI * 2;
+                this.speedY = 1.5 + Math.random() * 0.5; 
+                this.speedA = 0.03; 
+                this.trail = [];
+            }
+            update(rotX, rotY) {
+                if (mode === 2) return; 
+
+                this.y -= this.speedY;
+                this.angle += this.speedA;
+                if (this.y < TOP_Y - 50) this.reset(); 
+                let normalizedH = (this.y - TOP_Y) / TREE_HEIGHT;
+                let r = (TREE_WIDTH * normalizedH) + 25; 
+                let x = Math.cos(this.angle) * r;
+                let z = Math.sin(this.angle) * r;
+                let y = this.y;
+                this.trail.push({x, y, z});
+                if(this.trail.length > this.maxTrail) this.trail.shift();
+            }
+            draw(rotX, rotY) {
+                if (transitionAlpha < 0.01) return;
+                ctx.globalAlpha = transitionAlpha;
+                if(this.trail.length < 2) return;
+                
+                let ribbonColor = (mode === 0) ? `hsl(${40 + Math.random()*15}, 100%, 70%)` : `hsl(${160 + Math.random()*20}, 100%, 80%)`;
+
+                ctx.beginPath();
+                let firstPoint = true; let lastScale = 0;
+                for (let i = 0; i < this.trail.length; i++) {
+                    let p3d = this.trail[i];
+                    let p = rotate3D(p3d.x, p3d.y, p3d.z, rotX, rotY);
+                    const scale = FOV / (FOV + p.z);
+                    if(scale > 0) {
+                        let sx = width / 2 + p.x * scale;
+                        let sy = height / 2 + p.y * scale;
+                        if(firstPoint) { ctx.moveTo(sx, sy); firstPoint = false; } 
+                        else { ctx.lineTo(sx, sy); }
+                        lastScale = scale; 
+                    }
+                }
+                ctx.shadowBlur = 15 * lastScale; ctx.shadowColor = ribbonColor; ctx.strokeStyle = ribbonColor;
+                ctx.lineWidth = 3 * lastScale; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+                ctx.stroke(); ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        function rotate3D(x, y, z, rotX, rotY) {
+            let x1 = x * Math.cos(rotY) - z * Math.sin(rotY);
+            let z1 = z * Math.cos(rotY) + x * Math.sin(rotY);
+            let y1 = y * Math.cos(rotX) - z1 * Math.sin(rotX);
+            let z2 = z1 * Math.cos(rotX) + y * Math.sin(rotX);
+            return {x: x1, y: y1, z: z2};
+        }
+
+        function init() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            particles = []; ribbons = [];
+            snowflakes = [];
+            
+            for (let i = 0; i < PARTICLE_COUNT; i++) particles.push(new Particle(i));
+            for (let i = 0; i < 12; i++) ribbons.push(new Ribbon(i * -50));
+            for (let i = 0; i < 300; i++) snowflakes.push(new Snowflake());
+        }
+
+        let time = 0;
+        function animate() {
+            time++;
+            ctx.fillStyle = (mode === 1) ? 'rgba(5, 5, 20, 0.9)' : 'rgba(5, 5, 10, 0.9)';
+            ctx.fillRect(0, 0, width, height);
+            
+            // 1. 雪花
+            snowflakes.forEach(s => { s.update(); s.draw(); });
+
+            currentRotationY += (targetRotationY - currentRotationY) * 0.05;
+            currentRotationX += (targetRotationX - currentRotationX) * 0.05;
+            if(!isDragging) {
+                targetRotationY += (mode === 1) ? 0.001 : 0.002;
+            }
+
+            if (mode !== 2) transitionAlpha += 0.05; 
+            else transitionAlpha -= 0.05;
+            transitionAlpha = Math.max(0, Math.min(1, transitionAlpha));
+
+            drawStar(currentRotationX, currentRotationY);
+            
+            // 2. 弹幕
+            danmakus.forEach(d => { d.update(); d.draw(); });
+            for (let i = danmakus.length - 1; i >= 0; i--) {
+                if (danmakus[i].dead) danmakus.splice(i, 1);
+            }
+
+            // 3. 【关键】绘制一个与背景色相同的径向渐变，遮住中心的弹幕，制造"实心"效果
+            ctx.save();
+            let gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, 200);
+            let bgColor = (mode === 1) ? 'rgba(5, 5, 20, 1)' : 'rgba(5, 5, 10, 1)';
+            gradient.addColorStop(0, bgColor); 
+            gradient.addColorStop(0.5, bgColor); 
+            gradient.addColorStop(1, 'rgba(0,0,0,0)'); 
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(width/2, height/2, 200, 0, Math.PI*2);
+            ctx.fill();
+            ctx.restore();
+
+            // 4. 3D树/礼物 (画在遮罩之上)
+            ribbons.forEach(r => r.update(currentRotationX, currentRotationY));
+            ribbons.forEach(r => r.draw(currentRotationX, currentRotationY));
+            particles.forEach(p => { p.update(time); p.draw(currentRotationX, currentRotationY, time); });
+            
+            // 5. UI
+            drawBottomText();
+            updateAndDrawEffects();
+
+            requestAnimationFrame(animate);
+        }
+
+        function updateAndDrawEffects() {
+            for (let i = sparks.length - 1; i >= 0; i--) {
+                sparks[i].update();
+                sparks[i].draw();
+                if (sparks[i].life <= 0) sparks.splice(i, 1);
+            }
+            for (let i = floatTexts.length - 1; i >= 0; i--) {
+                floatTexts[i].update();
+                floatTexts[i].draw();
+                if (floatTexts[i].life <= 0) floatTexts.splice(i, 1);
+            }
+        }
+
+        function drawStar(rotX, rotY) {
+             if (transitionAlpha < 0.01) return;
+             ctx.globalAlpha = transitionAlpha;
+            let x = 0, y = TOP_Y, z = 0;
+            let p = rotate3D(x, y, z, rotX, rotY);
+            const scale = FOV / (FOV + p.z);
+            if(scale > 0) {
+                let sx = width/2 + p.x * scale; let sy = height/2 + p.y * scale;
+                ctx.save(); ctx.translate(sx, sy); ctx.scale(scale, scale);
+                let starColor = (mode === 1) ? "#E0FFFF" : "#FFD700";
+                ctx.shadowBlur = 30; ctx.shadowColor = starColor; ctx.fillStyle = starColor;
+                ctx.font = "bold 60px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                ctx.fillText("★", 0, 0); ctx.restore();
+            }
+            ctx.globalAlpha = 1.0;
+        }
+
+        function drawBottomText() {
+            ctx.save();
+            ctx.textAlign = "center";
+            
+            ctx.font = "48px 'Mountains of Christmas', cursive";
+            let tx = width/2; 
+            let ty = height - 90;
+
+            if (mode === 0) { // Green Tree -> White
+                ctx.fillStyle = "white";
+                ctx.shadowColor = "rgba(255,255,255,0.8)";
+                ctx.shadowBlur = 15;
+            } 
+            else if (mode === 1) { // Purple -> Purple Gradient
+                let gradient = ctx.createLinearGradient(tx - 150, ty, tx + 150, ty);
+                gradient.addColorStop(0, "#800080"); 
+                gradient.addColorStop(0.5, "#9932CC"); 
+                gradient.addColorStop(1, "#E0FFFF");   
+                ctx.fillStyle = gradient;
+                ctx.shadowColor = "#DDA0DD";
+                ctx.shadowBlur = 10;
+            } 
+            else if (mode === 2) { // Gift -> Red Gradient
+                let gradient = ctx.createLinearGradient(tx - 100, ty, tx + 100, ty);
+                gradient.addColorStop(0, "#FF0000"); 
+                gradient.addColorStop(0.5, "#DC143C"); 
+                gradient.addColorStop(1, "#FFD700");   
+                ctx.fillStyle = gradient;
+                ctx.shadowColor = "#FF4500";
+                ctx.shadowBlur = 15;
+            }
+            
+            ctx.fillText("Merry Christmas", tx, ty);
+            
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = "rgba(255,255,255,0.5)";
+            ctx.strokeText("Merry Christmas", tx, ty);
+            
+            // 中文祝福 (再明黄一点 #FFFF66)
+            ctx.font = "300 18px 'Noto Sans SC', sans-serif";
+            if (ctx.letterSpacing !== undefined) ctx.letterSpacing = "4px";
+            
+            ctx.lineWidth = 3;
+            ctx.lineJoin = "round";
+            ctx.strokeStyle = "rgba(0,0,0,0.8)";
+            ctx.strokeText("各位继峰同事们 圣诞节快乐！！🎄✨", width / 2, height - 50);
+            
+            ctx.fillStyle = "#FFFF66"; 
+            ctx.fillText("各位继峰同事们 圣诞节快乐！！🎄✨", width / 2, height - 50);
+            
+            if (ctx.letterSpacing !== undefined) ctx.letterSpacing = "0px";
+            ctx.restore();
+        }
+
+        function createClickEffects(x, y) {
+            for (let i = 0; i < 40; i++) {
+                sparks.push(new Spark(x, y));
+            }
+            const text = BLESSINGS[blessingIndex % BLESSINGS.length];
+            floatTexts.push(new FloatText(x, y - 60, text));
+            blessingIndex++;
+        }
+
+        window.addEventListener('resize', () => { init(); });
+        function onStart(x, y) { isDragging = true; dragStartTime = Date.now(); isClick = true; lastMouseX = x; lastMouseY = y; }
+        function onMove(x, y) {
+            if (!isDragging) return;
+            const deltaX = x - lastMouseX; const deltaY = y - lastMouseY;
+            if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) isClick = false;
+            targetRotationY += deltaX * 0.01; targetRotationX += deltaY * 0.01;
+            lastMouseX = x; lastMouseY = y;
+        }
+        function onEnd(e) {
+            isDragging = false;
+            const dragDuration = Date.now() - dragStartTime;
+            if (isClick && dragDuration < 200) {
+                let cx, cy;
+                if(e.changedTouches) {
+                    cx = e.changedTouches[0].clientX;
+                    cy = e.changedTouches[0].clientY;
+                } else {
+                    cx = e.clientX;
+                    cy = e.clientY;
+                }
+                mode = (mode + 1) % 3;
+                targetRotationY = 0; targetRotationX = 0;
+                createClickEffects(cx, cy);
+            }
+        }
+
+        canvas.addEventListener('mousedown', e => onStart(e.clientX, e.clientY));
+        canvas.addEventListener('touchstart', e => onStart(e.touches[0].clientX, e.touches[0].clientY), {passive: false});
+        window.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+        window.addEventListener('touchmove', e => { onMove(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }, {passive: false});
+        window.addEventListener('mouseup', onEnd);
+        window.addEventListener('touchend', onEnd);
+
+        init();
+        animate();
+    </script>
+</body>
+</html>
